@@ -1,2 +1,2 @@
 # mlflow-mnist
-Mlflow example using Tensorflow 2.x training a custom loop over MNIST dataset.
+Mlflow example using Tensorflow 2.x with a custom training loop over MNIST dataset.
