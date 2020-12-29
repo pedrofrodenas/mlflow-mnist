@@ -19,6 +19,8 @@ class Config(object):
 
     # NUMBER OF GPUs to use. When using only a CPU, this needs to be set to 1.
     GPU_COUNT = 1
+    
+    DATASET_DIR = "dataset"
 
 
     def __init__(self):

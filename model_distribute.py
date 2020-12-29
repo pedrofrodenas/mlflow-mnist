@@ -10,14 +10,13 @@ import tensorflow as tf
 
 class TrainMNIST():
     def __init__(self, config, log_dir):
+        
+        tf.keras.backend.clear_session()
+        
         self.config = config
         self.log_dir = log_dir
         
-        self.strategy = tf.distribute.MirroredStrategy()
-        
-        print('Number of devices: {}'.format(self.strategy.num_replicas_in_sync))
-        
-        self.keras_model = self.build()
+        self.keras_model = None
     
     def build(self):
         
@@ -32,13 +31,28 @@ class TrainMNIST():
     
     def compile(self):
         
-        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001, 
-                                           beta_1=0.9, 
-                                           beta_2=0.999, 
-                                           epsilon=1e-07, 
-                                           amsgrad=False,
-                                           name='Adam',
-                                           )
+        self.strategy = tf.distribute.MirroredStrategy()
+        print('Number of devices: {}'.format(self.strategy.num_replicas_in_sync))
+        
+        self.global_batch_size = self.config.IMAGES_PER_GPU * self.strategy.num_replicas_in_sync()
+        
+        self.steps_per_epochs = len([1,2,3]) // self.global_batch_size
+        
+        with self.strategy.scope():
+        
+            self.keras_model = self.build()
+        
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.001, 
+                                               beta_1=0.9, 
+                                               beta_2=0.999, 
+                                               epsilon=1e-07, 
+                                               amsgrad=False,
+                                               name='Adam',
+                                               )
+            
+            
+        
+        
         
         
         
