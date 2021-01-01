@@ -6,40 +6,59 @@ Created on Mon Dec 28 13:05:38 2020
 @author: pedrofRodenas
 """
 
+import file_utils
+
 import os
  
-import cv2
-import numpy as np
 import pandas as pd
+from PIL import Image
 import tensorflow as tf
 
-      
-def mnist_writer(save_path):
     
-    # Load MNIST dataset
-    mnist = tf.keras.datasets.mnist
-    (x_train, y_train), (x_test, y_test) = mnist.load_data()
-    
-    # Encode array to .png
-    x_train_encoded = np.array(list(map(image_to_encodedbytes, x_train)))
-    x_test_encoded = np.array(list(map(image_to_encodedbytes, x_test)))
-
-    # Convert array to pandas dataframe
-    df_train = pd.DataFrame({'images':x_train_encoded, 'labels':y_train})
-    df_test = pd.DataFrame({'images':x_test_encoded, 'labels':y_test})
-    
-    # Build save path
-    train_save_name = os.path.join(save_path, 'train.csv')
-    train_save_name = os.path.normpath(train_save_name)
-    test_save_name = os.path.join(save_path, 'test.csv')
-    test_save_name = os.path.normpath(test_save_name)
-     
-    # Save dataframe
-    df_train.to_csv(train_save_name)
-    df_test.to_csv(test_save_name)
+class SaverMNIST():
+    def __init__(self, image_train_path, image_test_path, csv_train_path, 
+                 csv_test_path):
         
+        self._image_format = '.png'
         
-def image_to_encodedbytes(image):
-    success, encoded_image = cv2.imencode('.png', image)
-    data = encoded_image.tobytes()
-    return data
+        self.store_image_paths = [image_train_path, image_test_path]
+        self.store_csv_paths = [csv_train_path, csv_test_path]
+        
+        file_utils.make_dirs(self.store_image_paths)
+        file_utils.make_containing_dirs(self.store_csv_paths)
+             
+        # Load MNIST dataset
+        mnist = tf.keras.datasets.mnist
+        self.data = mnist.load_data()
+        
+    def run(self):
+        
+        for collection, store_image_path, store_csv_path in zip(self.data, 
+                                                                self.store_image_paths,
+                                                                self.store_csv_paths):
+            
+            labels_list = []
+            width_list = []
+            height_list = []
+            names_list = []
+            
+            for index, (image, label) in enumerate(zip(collection[0], 
+                                                       collection[1])):
+                im = Image.fromarray(image)
+                width, height = im.size
+                image_name = str(index) + self._image_format
+                
+                # Build save path
+                save_path = os.path.join(store_image_path, image_name)
+                im.save(save_path)
+                
+                labels_list.append(label)
+                width_list.append(width)
+                height_list.append(height)
+                names_list.append(image_name)
+                
+            df = pd.DataFrame({'names':names_list, 'labels': labels_list,
+                               'widths': width_list, 'heights': height_list})
+            
+            df.to_csv(store_csv_path)
+                
