@@ -38,9 +38,7 @@ class SaverMNIST():
                                                                 self.store_csv_paths):
             
             labels_list = []
-            width_list = []
-            height_list = []
-            names_list = []
+            paths_list = []
             
             for index, (image, label) in enumerate(zip(collection[0], 
                                                        collection[1])):
@@ -53,12 +51,9 @@ class SaverMNIST():
                 im.save(save_path)
                 
                 labels_list.append(label)
-                width_list.append(width)
-                height_list.append(height)
-                names_list.append(image_name)
+                paths_list.append(save_path)
                 
-            df = pd.DataFrame({'names':names_list, 'labels': labels_list,
-                               'widths': width_list, 'heights': height_list})
+            df = pd.DataFrame({'image_paths':paths_list, 'labels': labels_list})
             
             df.to_csv(store_csv_path)
                 

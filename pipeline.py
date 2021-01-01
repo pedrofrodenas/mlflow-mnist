@@ -14,13 +14,21 @@ from config import Config
 mnist_to_disk = SaverMNIST(Config.TRAIN_IMAGES_DIR, Config.TEST_IMAGES_DIR, 
                            Config.TRAIN_CSV_PATH, Config.TEST_CSV_PATH)
 
-mnist_to_disk.run()
+#mnist_to_disk.run()
 
-# train_dataset_converter = TFRecordsConverter(csv_path=Config.TRAIN_CSV_PATH,
-#                                              split_name='train',
-#                                              output_dir=Config.DATASET_DIR,
-#                                              image_shape=Config.IMAGE_SHAPE,
-#                                              n_shards=2)
+train_dataset_converter = TFRecordsConverter(csv_path=Config.TRAIN_CSV_PATH,
+                                             image_dir=Config.TRAIN_IMAGES_DIR,
+                                             split_name='train',
+                                             output_dir=Config.TRAIN_DIR,
+                                             image_shape=Config.IMAGE_SHAPE,
+                                             n_shards=2)
 
-# shard_splits = train_dataset_converter.convert()
+test_dataset_converter = TFRecordsConverter(csv_path=Config.TEST_CSV_PATH,
+                                            image_dir=Config.TEST_IMAGES_DIR,
+                                            split_name='test',
+                                            output_dir=Config.TEST_DIR,
+                                            image_shape=Config.IMAGE_SHAPE)
+
+train_dataset_converter.convert()
+test_dataset_converter.convert()
 
