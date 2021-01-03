@@ -129,8 +129,9 @@ class TFRecordsConverter:
             The constructed shard path.
         """
         return os.path.join(self.output_dir,
-                            '{}-{:03d}-{}.tfrec'.format(split, shard_id,
-                                                        shard_size))
+                            '{}-{:03d}-{}--{}.tfrec'.format(split, shard_id,
+                                                            shard_size,
+                                                            self.n_samples))
 
     def _split_data_into_shards(self):
         """Split data into train/test/val sets.

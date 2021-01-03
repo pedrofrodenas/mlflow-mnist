@@ -7,6 +7,7 @@ Created on Tue Dec 29 13:05:52 2020
 """
 
 from dataset import TFRecordsConverter
+from generators import TFRecordsGenerator
 from mnist_to_disk import SaverMNIST
 from config import Config
 
@@ -29,6 +30,13 @@ test_dataset_converter = TFRecordsConverter(csv_path=Config.TEST_CSV_PATH,
                                             output_dir=Config.TEST_DIR,
                                             image_shape=Config.IMAGE_SHAPE)
 
-train_dataset_converter.convert()
-test_dataset_converter.convert()
+#train_dataset_converter.convert()
+# test_dataset_converter.convert()
+
+
+train_dataset = TFRecordsGenerator(Config.TRAIN_DIR)
+
+ds = train_dataset.prepare(batch_size=8)
+
+
 
