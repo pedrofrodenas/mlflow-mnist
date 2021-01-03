@@ -39,6 +39,9 @@ class TFRecordsGenerator():
                                           compression_type='ZLIB',
                                           num_parallel_reads=AUTOTUNE)
         
+    def __len__(self):
+        return self.n_samples
+        
     def _parse_batch(self, record_batch):
     
         # Create a description of the features
