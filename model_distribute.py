@@ -6,6 +6,9 @@ Created on Sun Dec  6 20:49:31 2020
 @author: pedrofrodenas
 """
 
+import datetime
+import os
+
 import tensorflow as tf
 
 class TrainMNIST():
@@ -15,6 +18,7 @@ class TrainMNIST():
         
         self.config = config
         self.log_dir = log_dir
+        self.set_log_dir()
         
         self.keras_model = None
     
@@ -61,6 +65,58 @@ class TrainMNIST():
             #                                    )
             
             return train_dist_dataset, val_dist_dataset
+        
+    def set_log_dir(self, model_path=None):
+        """Sets the model log directory and epoch counter.
+        model_path: If None, or a format different from what this code uses
+            then set a new log directory and start epochs from 0. Otherwise,
+            extract the log directory and the epoch counter from the file
+            name.
+        """
+        # Set date and epoch counter as if starting a new model
+        self.epoch = 0
+        now = datetime.datetime.now()
+
+
+        # Directory for training logs
+        self.model_dir = os.path.join(self.log_dir, "{}{:%Y%m%dT%H%M}".format(
+            self.config.NAME.lower(), now))
+
+        # Path to save after each epoch. Include placeholders that get filled by Keras.
+        self.checkpoint_path = os.path.join(self.model_dir, "mnist_{}_*epoch*.h5".format(
+            self.config.NAME.lower()))
+        
+        self.checkpoint_path = self.checkpoint_path.replace(
+            "*epoch*", "{epoch:04d}")
+        
+    def train(self, train_dataset, val_dataset, learning_rate, epochs, layers,
+              augmentation=None, custom_callbacks=None, no_augmentation_sources=None):
+        """Train the model.
+        
+        """
+
+        # Create log_dir if it does not exist
+        if not os.path.exists(self.model_dir):
+            os.makedirs(self.model_dir)
+
+       
+        self.compile(learning_rate, self.config.LEARNING_MOMENTUM)
+
+       
+
+        self.keras_model.fit_generator(
+            train_generator,
+            initial_epoch=self.epoch,
+            epochs=epochs,
+            steps_per_epoch=self.config.STEPS_PER_EPOCH,
+            callbacks=callbacks,
+            validation_data=val_generator,
+            validation_steps=self.config.VALIDATION_STEPS,
+            max_queue_size=100,
+            workers=workers,
+            use_multiprocessing=True,
+        )
+        self.epoch = max(self.epoch, epochs)
             
             
         

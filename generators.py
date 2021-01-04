@@ -68,8 +68,10 @@ class TFRecordsGenerator():
         
         self.ds = self.ds.map(self._parse_batch, num_parallel_calls=AUTOTUNE)
         
-        # Prepare batches
-        self.ds = self.ds.batch(batch_size)
+        # Prepare batches, drop remainded samples when pass through the whole
+        # dataset. This is useful in order to calculate later steps_per_epochs
+        # accurately
+        self.ds = self.ds.batch(batch_size, drop_remainder=True)
         
         return self.ds.prefetch(tf.data.experimental.AUTOTUNE)
         
