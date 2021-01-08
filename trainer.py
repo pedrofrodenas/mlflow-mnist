@@ -11,25 +11,32 @@ import tensorflow as tf
 
 class Trainer():
     
-    def __init__(self, epochs, model, images_per_gpu, strategy):
+    def __init__(self, optimizer, epochs, model, images_per_gpu, 
+                 steps_per_epoch_train, steps_per_epoch_val, 
+                 strategy):
+        
+        self.optimizer = optimizer
         self.epochs = epochs
         self.model = model
         self.images_per_gpu = images_per_gpu
+        self.steps_per_epoch_train = steps_per_epoch_train
+        self.steps_per_epoch_val = steps_per_epoch_val
         self.strategy = strategy
         
-        with self.strategy.scope():
-            # Set reduction to `none` so we can do the reduction afterwards and divide by
-            # global batch size.
-            self.loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
-                from_logits=True,
-                reduction=tf.keras.losses.Reduction.NONE)
-            
-            self.test_loss = tf.keras.metrics.Mean(name='test_loss')
+        # Descomentar esto despues si no hace falta
+        # with self.strategy.scope():
+        # Set reduction to `none` so we can do the reduction afterwards and divide by
+        # global batch size.
+        self.loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
+            from_logits=True,
+            reduction=tf.keras.losses.Reduction.NONE)
+        
+        self.test_loss = tf.keras.metrics.Mean(name='test_loss')
 
-            self.train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
-                name='train_accuracy')
-            self.test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
-                name='test_accuracy')
+        self.train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
+            name='train_accuracy')
+        self.test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
+            name='test_accuracy')
         
     def compute_loss(self, label, predictions):
         
@@ -56,7 +63,7 @@ class Trainer():
       self.optimizer.apply_gradients(zip(gradients,
                                          self.model.trainable_variables))
   
-      self.train_acc_metric(label, predictions)
+      self.train_accuracy(label, predictions)
       return loss
   
     def test_step(self, inputs):
@@ -70,8 +77,8 @@ class Trainer():
       unscaled_test_loss = self.loss_object(label, predictions) + sum(
           self.model.losses)
   
-      self.test_acc_metric(label, predictions)
-      self.test_loss_metric(unscaled_test_loss)
+      self.test_accuracy(label, predictions)
+      self.test_loss(unscaled_test_loss)
       
       
     # `run` replicates the provided computation and runs it
@@ -102,6 +109,7 @@ class Trainer():
             for x in train_dist_dataset:
                 total_loss += self.distributed_train_step(x)
                 num_batches += 1
+                print(num_batches)
             train_loss = total_loss / tf.cast(num_batches, dtype=tf.float32)
           
             # TEST LOOP

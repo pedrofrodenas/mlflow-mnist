@@ -22,6 +22,8 @@ class Config(object):
     # NUMBER OF GPUs to use. When using only a CPU, this needs to be set to 1.
     GPU_COUNT = 1
     
+    LOG_DIR = "logs"
+    
     DATASET_DIR = "dataset"
     
     TRAIN_DIR = os.path.join(DATASET_DIR, 'train')
@@ -34,6 +36,8 @@ class Config(object):
     TEST_CSV_PATH = os.path.join(TEST_DIR, 'test.csv')
     
     IMAGE_SHAPE = (28, 28)
+    
+    EPOCHS = 10
 
 
     def __init__(self):

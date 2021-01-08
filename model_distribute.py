@@ -6,18 +6,19 @@ Created on Sun Dec  6 20:49:31 2020
 @author: pedrofrodenas
 """
 
+from trainer import Trainer
+
 import datetime
 import os
 
 import tensorflow as tf
 
 class TrainMNIST():
-    def __init__(self, config, log_dir):
+    def __init__(self, config):
         
         tf.keras.backend.clear_session()
         
         self.config = config
-        self.log_dir = log_dir
         self.set_log_dir()
         
         self.keras_model = None
@@ -38,13 +39,13 @@ class TrainMNIST():
         self.strategy = tf.distribute.MirroredStrategy()
         print('Number of devices: {}'.format(self.strategy.num_replicas_in_sync))
         
-        self.global_batch_size = self.config.IMAGES_PER_GPU * self.strategy.num_replicas_in_sync()
+        self.global_batch_size = self.config.IMAGES_PER_GPU * self.strategy.num_replicas_in_sync
         
         self.steps_per_epochs_train = len(tf_data_train) // self.global_batch_size
         self.steps_per_epochs_val = len(tf_data_val) // self.global_batch_size
         
-        ds_train = tf_data_train.create(self.global_batch_size)
-        ds_val = tf_data_val.create(self.global_batch_size)
+        ds_train = tf_data_train.prepare(self.global_batch_size)
+        ds_val = tf_data_val.prepare(self.global_batch_size)
         
         with self.strategy.scope():
             
@@ -53,16 +54,19 @@ class TrainMNIST():
         
             self.keras_model = self.build()
             
+            # Queda definir el learning_rate
+            self.optimizer = tf.keras.optimizers.Adam()
+            
             # Callback list definition
             callback_list = []
-        
-            # optimizer=tf.keras.optimizers.Adam(learning_rate=0.001, 
-            #                                    beta_1=0.9, 
-            #                                    beta_2=0.999, 
-            #                                    epsilon=1e-07, 
-            #                                    amsgrad=False,
-            #                                    name='Adam',
-            #                                    )
+            
+            self.trainer = Trainer(self.optimizer,
+                                   self.config.EPOCHS, 
+                                   self.keras_model, 
+                                   self.config.IMAGES_PER_GPU, 
+                                   self.steps_per_epochs_train,
+                                   self.steps_per_epochs_val,
+                                   self.strategy)
             
             return train_dist_dataset, val_dist_dataset
         
@@ -73,24 +77,23 @@ class TrainMNIST():
             extract the log directory and the epoch counter from the file
             name.
         """
-        # Set date and epoch counter as if starting a new model
-        self.epoch = 0
+
         now = datetime.datetime.now()
 
 
         # Directory for training logs
-        self.model_dir = os.path.join(self.log_dir, "{}{:%Y%m%dT%H%M}".format(
+        self.model_dir = os.path.join(self.config.LOG_DIR, "{}{:%Y%m%dT%H%M}".format(
             self.config.NAME.lower(), now))
 
         # Path to save after each epoch. Include placeholders that get filled by Keras.
         self.checkpoint_path = os.path.join(self.model_dir, "mnist_{}_*epoch*.h5".format(
             self.config.NAME.lower()))
         
+        # Define save model name
         self.checkpoint_path = self.checkpoint_path.replace(
             "*epoch*", "{epoch:04d}")
         
-    def train(self, train_dataset, val_dataset, learning_rate, epochs, layers,
-              augmentation=None, custom_callbacks=None, no_augmentation_sources=None):
+    def train(self, tf_data_train, tf_data_val, learning_rate, epochs):
         """Train the model.
         
         """
@@ -100,23 +103,13 @@ class TrainMNIST():
             os.makedirs(self.model_dir)
 
        
-        self.compile(learning_rate, self.config.LEARNING_MOMENTUM)
+        train_dist_dataset, val_dist_dataset = self.compile(tf_data_train, 
+                                                            tf_data_val)
+        
+        self.trainer.custom_loop(train_dist_dataset, val_dist_dataset)
 
        
-
-        self.keras_model.fit_generator(
-            train_generator,
-            initial_epoch=self.epoch,
-            epochs=epochs,
-            steps_per_epoch=self.config.STEPS_PER_EPOCH,
-            callbacks=callbacks,
-            validation_data=val_generator,
-            validation_steps=self.config.VALIDATION_STEPS,
-            max_queue_size=100,
-            workers=workers,
-            use_multiprocessing=True,
-        )
-        self.epoch = max(self.epoch, epochs)
+        
             
             
         

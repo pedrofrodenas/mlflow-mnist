@@ -6,12 +6,45 @@ Created on Sun Dec  6 20:31:06 2020
 @author: pedrofrodenas
 """
 
-import tensorflow as tf
+from config import Config
+from generators import TFRecordsGenerator
 
-mnist = tf.keras.datasets.mnist
+from model_distribute import TrainMNIST
 
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
-x_train, x_test = x_train / 255.0, x_test / 255.0
+class MNISTConfig(Config):
+    """Configuration for training MNIST dataset.
+    Derives from the base Config class and overrides some values.
+    """
+    # Give the configuration a recognizable name
+    NAME = "mnist"
+
+    # We use a GPU with 12GB memory, which can fit two images.
+    # Adjust down if you use a smaller GPU.
+    IMAGES_PER_GPU = 1
+    
+    
+
+tf_data_train = TFRecordsGenerator(MNISTConfig.TRAIN_DIR)
+tf_data_val = TFRecordsGenerator(MNISTConfig.TEST_DIR)
+    
+mnist_trainer = TrainMNIST(MNISTConfig)
+
+mnist_trainer.train(tf_data_train, tf_data_val, 0.002, 5)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -30,8 +30,8 @@ test_dataset_converter = TFRecordsConverter(csv_path=Config.TEST_CSV_PATH,
                                             output_dir=Config.TEST_DIR,
                                             image_shape=Config.IMAGE_SHAPE)
 
-#train_dataset_converter.convert()
-# test_dataset_converter.convert()
+train_dataset_converter.convert()
+test_dataset_converter.convert()
 
 
 train_dataset = TFRecordsGenerator(Config.TRAIN_DIR)

@@ -25,6 +25,8 @@ class TFRecordsGenerator():
         iterator = files_ds.as_numpy_iterator()
         element = next(iterator)
         element = element.decode('utf-8')
+        # Getrid of tfrecords path, keep name
+        element = os.path.basename(element)
         
         # Parse number of samples in dataset ()
         self.n_samples = int(os.path.splitext(element.split('--')[-1])[0])
