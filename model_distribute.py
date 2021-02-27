@@ -6,6 +6,7 @@ Created on Sun Dec  6 20:49:31 2020
 @author: pedrofrodenas
 """
 
+from callbacks import CustomCallback
 from trainer import Trainer
 
 import datetime
@@ -54,15 +55,32 @@ class TrainMNIST():
         
             self.keras_model = self.build()
             
+            loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
+                from_logits=True,
+                reduction=tf.keras.losses.Reduction.NONE)
+            
+            test_loss = tf.keras.metrics.Mean(name='test_loss')
+
+            train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
+                name='train_accuracy')
+            test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
+                name='test_accuracy')
+            
             # Queda definir el learning_rate
-            self.optimizer = tf.keras.optimizers.Adam()
+            optimizer = tf.keras.optimizers.Adam()
             
             # Callback list definition
             callback_list = []
             
-            self.trainer = Trainer(self.optimizer,
+            callback_list.append(CustomCallback())
+            
+            self.trainer = Trainer(self.keras_model,
+                                   optimizer,
+                                   loss_object,
+                                   test_loss,
+                                   train_accuracy,
+                                   test_accuracy,
                                    self.config.EPOCHS, 
-                                   self.keras_model, 
                                    self.config.IMAGES_PER_GPU, 
                                    self.steps_per_epochs_train,
                                    self.steps_per_epochs_val,

@@ -20,7 +20,7 @@ class MNISTConfig(Config):
 
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
-    IMAGES_PER_GPU = 1
+    IMAGES_PER_GPU = 64
     
     
 

@@ -7,7 +7,11 @@ Created on Sun Dec  6 20:45:51 2020
 """
 
 import os
+import yaml
 
+class PrettySafeLoader(yaml.SafeLoader):
+    def construct_python_tuple(self, node):
+        return tuple(self.construct_sequence(node))
 
 class Config(object):
     """Base configuration class. For custom configurations, create a
@@ -18,10 +22,9 @@ class Config(object):
     # Useful if your code needs to do things differently depending on which
     # experiment is running.
     NAME = None
-
-    # NUMBER OF GPUs to use. When using only a CPU, this needs to be set to 1.
-    GPU_COUNT = 1
     
+    IMAGES_PER_GPU = 32
+  
     LOG_DIR = "logs"
     
     DATASET_DIR = "dataset"
@@ -51,3 +54,34 @@ class Config(object):
             if not a.startswith("__") and not callable(getattr(self, a)):
                 print("{:30} {}".format(a, getattr(self, a)))
         print("\n")
+        
+    def import_config(self, config_path):
+        """Reads configuration variables
+        from .yaml file and set the variables
+        """
+        
+        # Necesary for importing python tuples from
+        # .yaml
+        PrettySafeLoader.add_constructor(
+            u'tag:yaml.org,2002:python/tuple',
+            PrettySafeLoader.construct_python_tuple)
+        with open(config_path, 'r') as stream:
+            try:
+                config_dict = yaml.load(stream, Loader=PrettySafeLoader)
+            except yaml.YAMLError as exc:
+                print(exc)
+         
+        for key in config_dict.keys():
+            setattr(self, key, config_dict[key])
+        
+           
+    def export(self, folder):
+        """Writes Configuration values
+        onto a .yaml file"""
+        config = {}
+           
+        for a in dir(self):
+            if not a.startswith("__") and not callable(getattr(self, a)):
+                config[a] = getattr(self, a)
+        with open(os.path.join(folder, 'configuration.yaml'), 'w+') as outfile:
+            yaml.dump(config, outfile, allow_unicode=True)

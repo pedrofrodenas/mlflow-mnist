@@ -11,32 +11,28 @@ import tensorflow as tf
 
 class Trainer():
     
-    def __init__(self, optimizer, epochs, model, images_per_gpu, 
+    def __init__(self, model, optimizer, loss_object, test_loss,
+                 train_accuracy, test_accuracy,epochs, images_per_gpu, 
                  steps_per_epoch_train, steps_per_epoch_val, 
-                 strategy):
+                 strategy, callbacks=None):
         
-        self.optimizer = optimizer
-        self.epochs = epochs
         self.model = model
+        self.optimizer = optimizer
+        self.loss_object = loss_object
+        self.test_loss = test_loss
+        self.train_accuracy = train_accuracy
+        self.test_accuracy = test_accuracy
+        self.epochs = epochs
         self.images_per_gpu = images_per_gpu
         self.steps_per_epoch_train = steps_per_epoch_train
         self.steps_per_epoch_val = steps_per_epoch_val
         self.strategy = strategy
+        self.callbacks = callbacks
         
         # Descomentar esto despues si no hace falta
         # with self.strategy.scope():
         # Set reduction to `none` so we can do the reduction afterwards and divide by
         # global batch size.
-        self.loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
-            from_logits=True,
-            reduction=tf.keras.losses.Reduction.NONE)
-        
-        self.test_loss = tf.keras.metrics.Mean(name='test_loss')
-
-        self.train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
-            name='train_accuracy')
-        self.test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
-            name='test_accuracy')
         
     def compute_loss(self, label, predictions):
         
@@ -101,6 +97,9 @@ class Trainer():
           test_dist_dataset: Testing dataset created using strategy.
           strategy: Distribution strategy.
         """
+        
+        for callback in self.callbacks:
+            callback.on_train_begin(logs)
     
         for epoch in range(self.epochs):
             # TRAIN LOOP
@@ -109,7 +108,6 @@ class Trainer():
             for x in train_dist_dataset:
                 total_loss += self.distributed_train_step(x)
                 num_batches += 1
-                print(num_batches)
             train_loss = total_loss / tf.cast(num_batches, dtype=tf.float32)
           
             # TEST LOOP

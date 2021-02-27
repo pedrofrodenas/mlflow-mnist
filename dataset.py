@@ -3,7 +3,7 @@
 """
 Created on Sun Dec 27 21:25:42 2020
 
-@author: pedrofrodenas
+@author: pedrofRodenas
 """
 
 import math
