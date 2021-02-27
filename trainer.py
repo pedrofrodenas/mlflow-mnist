@@ -147,8 +147,8 @@ class Trainer():
             
             self.logs.update({'loss': train_loss,
                               'test_loss': self.test_loss.result(),
-                              'train_accuracy': self.train_accuracy.result().numpy(),
-                              'test_accuracy': self.test_accuracy.result().numpy()})
+                              'acc': self.train_accuracy.result().numpy(),
+                              'test_acc': self.test_accuracy.result().numpy()})
             
             self._write_logs(self.logs, epoch)
           
