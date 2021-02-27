@@ -48,6 +48,8 @@ class TrainMNIST():
         ds_train = tf_data_train.prepare(self.global_batch_size)
         ds_val = tf_data_val.prepare(self.global_batch_size)
         
+        writer = tf.summary.create_file_writer(self.model_dir)
+        
         with self.strategy.scope():
             
             train_dist_dataset = self.strategy.experimental_distribute_dataset(ds_train)
@@ -84,7 +86,8 @@ class TrainMNIST():
                                    self.config.IMAGES_PER_GPU, 
                                    self.steps_per_epochs_train,
                                    self.steps_per_epochs_val,
-                                   self.strategy)
+                                   self.strategy,
+                                   writer)
             
             return train_dist_dataset, val_dist_dataset
         

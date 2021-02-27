@@ -7,6 +7,7 @@ Created on Sun Dec  6 20:33:20 2020
 """
 
 import tensorflow as tf
+import numpy as np
 
 
 class Trainer():
@@ -14,7 +15,7 @@ class Trainer():
     def __init__(self, model, optimizer, loss_object, test_loss,
                  train_accuracy, test_accuracy,epochs, images_per_gpu, 
                  steps_per_epoch_train, steps_per_epoch_val, 
-                 strategy, callbacks=None):
+                 strategy, writer ,callbacks=None):
         
         self.model = model
         self.optimizer = optimizer
@@ -27,12 +28,22 @@ class Trainer():
         self.steps_per_epoch_train = steps_per_epoch_train
         self.steps_per_epoch_val = steps_per_epoch_val
         self.strategy = strategy
+        self.writer = writer
         self.callbacks = callbacks
         
-        # Descomentar esto despues si no hace falta
-        # with self.strategy.scope():
-        # Set reduction to `none` so we can do the reduction afterwards and divide by
-        # global batch size.
+        self.logs = {}
+        
+    def _write_logs(self, logs, index):
+
+        with self.writer.as_default():                                                                                                                                                                                                                               
+            for name, value in logs.items():                                                                                                                                                                                                                              
+                if name in ['batch', 'size']:                                                                                                                                                                                                   
+                    continue                                                                                                                                                                          
+                if isinstance(value, np.ndarray):
+                    tf.summary.scalar(name, value.item(), step=index)                                                                                                                                                                                               
+                else:
+                    tf.summary.scalar(name, value, step=index)
+            self.writer.flush()
         
     def compute_loss(self, label, predictions):
         
@@ -98,33 +109,57 @@ class Trainer():
           strategy: Distribution strategy.
         """
         
-        for callback in self.callbacks:
-            callback.on_train_begin(logs)
-    
+        for cb in self.callbacks_list:
+            cb.on_train_begin()
+        
+        # TRAIN LOOP
         for epoch in range(self.epochs):
-            # TRAIN LOOP
+            
+            for cb in self.callbacks_list:
+                cb.on_epoch_begin(epoch)  
+            
             total_loss = 0.0
             num_batches = 0
             for x in train_dist_dataset:
+                
+                for cb in self.callbacks_list:
+                    cb.on_train_batch_begin(num_batches, self.logs)
+                    
                 total_loss += self.distributed_train_step(x)
                 num_batches += 1
+                
+                for cb in self.callbacks_list:
+                    cb.on_train_batch_end(num_batches, self.logs)
+
             train_loss = total_loss / tf.cast(num_batches, dtype=tf.float32)
           
             # TEST LOOP
             for x in test_dist_dataset:
                 self.distributed_test_step(x)
           
-            # if epoch % 2 == 0:
-            #     checkpoint.save(checkpoint_prefix)
           
             template = ("Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, "
                         "Test Accuracy: {}")
             print (template.format(epoch+1, train_loss,
-                                   self.train_accuracy.result()*100, 
+                                   self.train_accuracy.result(), 
                                    self.test_loss.result(),
-                                   self.test_accuracy.result()*100))
+                                   self.test_accuracy.result()))
+            
+            self.logs.update({'loss': train_loss,
+                              'test_loss': self.test_loss.result(),
+                              'train_accuracy': self.train_accuracy.result().numpy(),
+                              'test_accuracy': self.test_accuracy.result().numpy()})
+            
+            self._write_logs(self.logs, epoch)
           
             self.test_loss.reset_states()
             self.train_accuracy.reset_states()
             self.test_accuracy.reset_states()
+            
+            for cb in self.callbacks_list:
+                cb.on_epoch_end(epoch, self.logs)
+                
+        for cb in self.callbacks_list:
+            cb.on_train_end(self.logs)
+        self.writer.close()
 
