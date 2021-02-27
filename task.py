@@ -29,7 +29,9 @@ tf_data_val = TFRecordsGenerator(MNISTConfig.TEST_DIR)
     
 mnist_trainer = TrainMNIST(MNISTConfig)
 
-mnist_trainer.train(tf_data_train, tf_data_val, 0.002, 5)
+mnist_trainer.train(tf_data_train, tf_data_val, 
+                    learning_rate = 0.002, 
+                    epochs = 5)
 
 
 

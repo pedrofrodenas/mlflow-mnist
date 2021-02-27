@@ -15,7 +15,7 @@ class Trainer():
     def __init__(self, model, optimizer, loss_object, test_loss,
                  train_accuracy, test_accuracy,epochs, images_per_gpu, 
                  steps_per_epoch_train, steps_per_epoch_val, 
-                 strategy, writer ,callbacks=None):
+                 strategy, writer ,callbacks=[]):
         
         self.model = model
         self.optimizer = optimizer
@@ -109,26 +109,26 @@ class Trainer():
           strategy: Distribution strategy.
         """
         
-        for cb in self.callbacks_list:
+        for cb in self.callbacks:
             cb.on_train_begin()
         
         # TRAIN LOOP
         for epoch in range(self.epochs):
             
-            for cb in self.callbacks_list:
+            for cb in self.callbacks:
                 cb.on_epoch_begin(epoch)  
             
             total_loss = 0.0
             num_batches = 0
             for x in train_dist_dataset:
                 
-                for cb in self.callbacks_list:
+                for cb in self.callbacks:
                     cb.on_train_batch_begin(num_batches, self.logs)
                     
                 total_loss += self.distributed_train_step(x)
                 num_batches += 1
                 
-                for cb in self.callbacks_list:
+                for cb in self.callbacks:
                     cb.on_train_batch_end(num_batches, self.logs)
 
             train_loss = total_loss / tf.cast(num_batches, dtype=tf.float32)
@@ -156,10 +156,10 @@ class Trainer():
             self.train_accuracy.reset_states()
             self.test_accuracy.reset_states()
             
-            for cb in self.callbacks_list:
+            for cb in self.callbacks:
                 cb.on_epoch_end(epoch, self.logs)
                 
-        for cb in self.callbacks_list:
+        for cb in self.callbacks:
             cb.on_train_end(self.logs)
         self.writer.close()
 
