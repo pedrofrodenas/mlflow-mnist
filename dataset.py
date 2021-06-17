@@ -22,7 +22,7 @@ def _int64_feature(value):
     return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
 class TFRecordsConverter:
-    """Convert WAV files to TFRecords."""
+    """Convert .jpg files to TFRecords."""
 
     # When compression is used, resulting TFRecord files are four to five times
     # smaller. So, we can reduce the number of shards by this factor
